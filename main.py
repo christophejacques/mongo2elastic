@@ -30,11 +30,12 @@ if __name__ == "__main__":
     for doc in db.find({}, {"_id": 0}):
         fprint(f"Add doc: {doc} .. ", end="")
         es.add_doc(doc)
-
-    # Force la mise a jour et l'enregistrement
+    
+    # Force la mise a jour et l'enregistrement dans Elastic
     es.update_index()
     es.flush_index()
     print("Nombre de documents ajoutes :", es.count())
-
-    # Fermeture de la mongoDB
+    
+    # Fermeture des connexions
     es.close()
+    db.close()

@@ -8,7 +8,8 @@ def eprint(*args, **kwargs):
 
 
 locale.setlocale(locale.LC_ALL, '')
-locale._override_localeconv = {'mon_thousands_sep': ' '}
+variable = getattr(locale, "_override_localeconv") 
+variable = {'mon_thousands_sep': ' '}
 
 
 def fprint(*args, **kwargs):
@@ -23,8 +24,8 @@ class Elastic:
         if port == 0:
             port = 9200
             
-        self.es = Elasticsearch([{"scheme": "http", "host": host, "port": port}], request_timeout=5.0)
-        fprint("Connecting to ElasticSearch ... ", end="")
+        self.es = Elasticsearch([{"scheme": "http", "host": host, "port": port}], request_timeout=2.0)
+        fprint(f"Connecting to ElasticSearch ({host}:{port}) ... ", end="")
         if not self.es.ping():
             print("failed.")
             exit()
@@ -32,13 +33,14 @@ class Elastic:
         fprint(f"done in v{self.es.info().get('version').get('number')} ")
         self.index: str = ""
 
-    def close(self):
+    def close(self) -> None:
         self.es.close()
+        print("ElasticSearch connection closed.")
 
     def has_index(self, index_name: str) -> bool:
         return bool(self.es.indices.exists(index=index_name))
 
-    def use_index(self, index_name: str):
+    def use_index(self, index_name: str) -> None:
         if not self.es.indices.exists(index=index_name):
             raise Exception(f"L'index '{index_name}' n'existe pas.")
 
@@ -52,7 +54,7 @@ class Elastic:
 
         return liste
 
-    def liste_index(self):
+    def liste_index(self) -> None:
         print("Liste des index :")
         # for idx in filter(lambda x: not x.startswith("."), es.indices.get(index="*").keys()):
         for idx in self.es.indices.get(index="*").keys():
@@ -88,15 +90,15 @@ class Elastic:
         index_name = self.index if index_name is None else index_name
 
         return self.es.indices.stats(index=index_name)["indices"][index_name]["total"]["docs"].get("count", 0)
-        return self.es.count(index=index_name).get("count", 0)
+        # return self.es.count(index=index_name).get("count", 0)
 
-    def flush_index(self, index_name=None):
+    def flush_index(self, index_name=None) -> None:
         fprint(f"Flushing index '{self.index}' ... ", end="")
         index_name = self.index if index_name is None else index_name
         self.es.indices.flush(index=index_name)
         fprint("done.")
 
-    def delete_index(self, index_name=None):
+    def delete_index(self, index_name=None) -> None:
         index_name = self.index if index_name is None else index_name
         fprint(f"Suppression de tous les documents de l'index: '{index_name}'")
         nombre: int = self.count(index_name)
@@ -110,7 +112,7 @@ class Elastic:
         print("- ", end="")
         self.flush_index(index_name)
 
-    def drop_index(self, index_name: str):
+    def drop_index(self, index_name: str) -> None:
         fprint(f"Suppression de l'index: '{index_name}'", end=" ... ")
         self.es.indices.delete(index=index_name)
         fprint("done")
@@ -158,11 +160,11 @@ class Elastic:
         print(locale.format_string('%.d', total, grouping=True, monetary=True))
         exit()
 
-    def add_doc(self, document):
+    def add_doc(self, document) -> None:
         resp = self.es.index(index=self.index, document=document)
         fprint(resp['result'])
 
-    def update_index(self, index_name=None):
+    def update_index(self, index_name=None) -> None:
         # Forcez Elasticsearch à mettre à jour les index
         fprint(f"Updating index '{self.index}' ... ", end="")
         index_name = self.index if index_name is None else index_name
@@ -171,7 +173,7 @@ class Elastic:
 
 
 if __name__ == "__main__":
-    es = Elastic("localhost", 9200)
+    es = Elastic()
 
     es.use_index("suivi-activite")
     taille: int = es.count()

@@ -4,6 +4,10 @@ from pymongo.cursor import Cursor
 from pymongo.command_cursor import CommandCursor
 
 
+def fprint(*args, **kwargs):
+    print(*args, **kwargs, flush=True)
+
+
 class DataBaseError(BaseException):
     pass
 
@@ -18,7 +22,7 @@ class dbDatabase:
 
     def __init__(self):
         if not hasattr(dbDatabase, "client"):
-            print("dbDatabase initialisation .. ", end="")
+            fprint("dbDatabase initialisation .. ", end="")
             dbDatabase.client = None
             print("done.")
 
@@ -33,7 +37,8 @@ class dbDatabase:
     def use_database(self, dbname: str = ""):
         # Selectionne une Base de donnees
         if hasattr(self, "collection"):
-            del self.collection
+            if self.collection:
+                del self.collection
 
         if dbname:
             if dbname not in self.get_database_names():
@@ -53,7 +58,7 @@ class dbCollection(dbDatabase):
     def __init__(self):
         if not hasattr(dbCollection, "collection"):
             dbDatabase.__init__(self)
-            print("dbCollection initialisation .. ", end="")
+            fprint("dbCollection initialisation .. ", end="")
             dbCollection.collection = None
             print("done.")
 
@@ -85,7 +90,7 @@ class dbIndex(dbCollection):
     def __init__(self):
         if not hasattr(dbIndex, "Index"):
             dbCollection.__init__(self)
-            print("dbIndexes initialisation .. ", end="")
+            fprint("dbIndexes initialisation .. ", end="")
             dbIndex.Index = None
             print("done.")
 
@@ -114,7 +119,7 @@ class dbDocument(dbIndex):
     def __init__(self):
         if not hasattr(dbDocument, "Document"):
             dbIndex.__init__(self)
-            print("dbDocument initialisation .. ", end="")
+            fprint("dbDocument initialisation .. ", end="")
             dbDocument.Document = None
             print("done.")
 
@@ -151,19 +156,28 @@ class MongoDB(dbDocument):
         CONNECTION_STRING = f"mongodb://{server}:{str(port)}/"
 
         # Create a connection using MongoClient. You can import MongoClient or use pymongo.MongoClient
-        print(f"connecting to : {CONNECTION_STRING}")
+        fprint(f"Connecting to {CONNECTION_STRING} .. ", end="")
         self.client = MongoClient(CONNECTION_STRING)
+        print("done.")
         self.use_database()
+
+    def close(self) -> None:
+        if self.client:
+            self.client.close()
+            print("mongodb connection closed.")
 
 
 if __name__ == "__main__":
-    # assert isinstance(dbDatabase, type)
-    # assert isinstance(dbDatabase(), dbDatabase)
-    # assert isinstance(dbCollection, type)
-    # assert isinstance(dbCollection(), dbCollection)
-    # assert isinstance(dbIndex, type)
-    # assert isinstance(dbIndex(), dbIndex)
+    assert isinstance(dbDatabase, type)
+    assert isinstance(dbDatabase(), dbDatabase)
+    assert isinstance(dbCollection, type)
+    assert isinstance(dbCollection(), dbCollection)
+    assert isinstance(dbIndex, type)
+    assert isinstance(dbIndex(), dbIndex)
     assert isinstance(dbDocument, type)
-    # assert isinstance(dbDocument(), dbDocument)
+    assert isinstance(dbDocument(), dbDocument)
+
+    db = MongoDB()
+    db.close()
 
     print("Compilation OK")
